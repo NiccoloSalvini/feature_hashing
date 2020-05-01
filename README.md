@@ -15,20 +15,23 @@ applies a hash function to the features and uses their hash values as
 indices directly.
 
 The package FeatureHashing implements the method in (Weinberger et al.
-2009) to transform a `data.frame` to sparse matrix. The package provides
-a formula interface similar to model.matrix in R and
-Matrix::sparse.model.matrix in the package Matrix. Splitting of
-concatenated data, check the help of `test.tag` for explanation of
-concatenated data, during the construction of the model matrix.
+2009) to transform a `data.frame` to a sparse matrix. The package
+provides a formula interface similar to `model.matrix()` in R and
+`Matrix::sparse.model.matrix()`. You can also be splitting concatenated
+data. Say you have a string in a cell and you want to parse it and
+convert it into a predictor. The hasing algorythm used is the
+*MurmurHash3*, initially developed by
+[aappleby](https://github.com/aappleby/smhasher/wiki/MurmurHash3) and
+then refined by the Wush Wu, the author of the package.
 
 ## When should we use Feature Hashing?
 
 Feature hashing is useful when the user does not know the dimension of
 the feature vector. For example, the bag-of-word representation in
-document (R Core Team 2019) problem requires scanning entire dataset to
-know how many words we have, i.e. the dimension of the feature vector.
-Common example of columns that need feature hasing are urls, CAP (the
-italian Zip Code), IPs, cities when they are many.
+document problem requires scanning entire dataset to know how many words
+we have, i.e. the dimension of the feature vector. Common example of
+columns that need feature hasing are urls, CAP (the italian Zip Code),
+IPs, cities when they are many.
 
 In general, feature hashing is useful in the following environment:
 
@@ -42,23 +45,30 @@ feature vector.
 
 ## Getting Started
 
-The `FeatureHashing` is all about biuulding construct
-`Matrix::dgCMatrix` and train a model in packages which supports
-`Matrix::dgCMatrix` as input. Since our
+The `FeatureHashing` is all about building construct `Matrix::dgCMatrix`
+and train a model in packages which supports `Matrix::dgCMatrix` as
+input. Since our
 [wrapper](https://tidymodels.github.io/parsnip/articles/articles/Models.html)
 `parnsip`, by Kuhn hosts a number of different model, we can still use
 this as pipeline to build our model (aka setting the computational
 engine: `set_engine()`).
+
+If you are not totally sure about what is a hash function you can check
+out these interesting quora answers
+[here](https://www.quora.com/Can-you-explain-feature-hashing-in-an-easily-understandable-way)
 
 2 widely-used possibilities in which we can perform the hasing tricka
 are:
 
 1.  classic logistic regression w/ `glmnet`
 2.  `xgboost`
+3.  \``sparklyr`
+    [here](https://spark.rstudio.com/reference/1.04/ft_feature_hasher/)
+    with their own functions. ft\_\_something
 
 ## An example
 
-let’s load our data, data here are form the ipinyou (Zhang et al. 2014)
+let’s load our data, data here are form the ipinyou (Zhang et al. 2014a)
 dataset. this dataset has many *char* variables that actually can’t
 really be considered **a-priori** informative. Those are the ones that
 in any regular classroom exercises are dropped.
@@ -69,7 +79,7 @@ place their own advertisement on poluar platforms. Due to the increasing
 number of companies that want to exploit the benefits of online
 advertisement and also to the lack of widely extended and performing
 channel on the web, companies are *bidding* prices to grab their space.
-This market is really huge and capitalized.
+This market is really huge and capitalized. (Zhang et al. 2014b)
 
 > Emerged in 2009 \[?\], Real-Time Bidding (RTB) has become an important
 > new paradigm in display advertising. For example, eMarketer estimates
@@ -150,21 +160,23 @@ are valuable and that it can actually exploit them if we make a
 trasnformation of them. Hash function helps up doing that. One more
 thing to say is that here Data are really sensitive. The more data
 becomes sensitive and the more this type of information come up, the
-more they have values. see one of them:
+more they have values. see one of them, say: IP, Domain, AdSlotId:
 
 ``` r
 Ip = ipinyou.test$IP
-knitr::kable(head(Ip), "pandoc")
+domain = ipinyou.test$Domain
+adslotid = ipinyou.test$AdSlotId
+dt = data.frame(Ip,domain,adslotid)
 ```
 
-| x              |
-| :------------- |
-| 183.235.61.\*  |
-| 113.82.111.\*  |
-| 119.136.133.\* |
-| 112.90.194.\*  |
-| 113.104.225.\* |
-| 14.213.115.\*  |
+| Ip             | domain                           | adslotid                        |
+| :------------- | :------------------------------- | :------------------------------ |
+| 183.235.61.\*  | 32891a14f72e4f88451e349ed095ba41 | mm\_26632206\_2690592\_10599267 |
+| 113.82.111.\*  | 408045890463bb216b49ca36ef97820  | mm\_11402872\_1272384\_3182279  |
+| 119.136.133.\* | fdae6842bdadadac7e1acebac6ca9fd9 | 652625647                       |
+| 112.90.194.\*  | c686bfc01abf7688c42989656316a8ea | Fashion\_Width5                 |
+| 113.104.225.\* | dd4270481b753dde29898e27c7c03920 | Ent\_F\_Width1                  |
+| 14.213.115.\*  | dd4270481b753dde29898e27c7c03920 | Ent\_F\_Width1                  |
 
 ## logistic regression with the `glmnet`
 
@@ -176,7 +188,7 @@ need to split.
 f = ~ IP + Region + City + AdExchange + Domain +
   URL + AdSlotId + AdSlotWidth + AdSlotHeight +
   AdSlotVisibility + AdSlotFormat + CreativeID +
-  Adid + split(UserTag, delim = ",")
+  Adid + split(UserTag, delim = ",") # here there is the splitting property that I was mentioning at te beginning 
 
 
 m.train = hashed.model.matrix(f, ipinyou.train, 2^16)
@@ -199,6 +211,13 @@ head(m.train)
 #>  ..............................
 ```
 
+this is an S4 dg matrix object composed nrows per ncolumns, this example
+can be a little bit confusing due to the amount of data considered.
+Anyway the purpose was to demonstarte how to integrate such featuring
+functions in a common machine learning problem. For this purpose I
+developed one other toy example just to have a taste of what the
+`hashed.model.function()` is really doing.
+
 Once you have define train and test you can perform directly the
 logistic:
 
@@ -211,15 +230,150 @@ auc.score
 #> [1] 0.5187244
 ```
 
-## Reference
+## One other example
+
+Lets take a look at the `mtcars`. It has 32 obervations, it has rownames
+with cars names, so I set them equal to a column called rowname.
+
+``` r
+mtcars = mtcars %>% 
+  rownames_to_column() %>% 
+  tibble()
+attach(mtcars)
+#> The following object is masked from package:ggplot2:
+#> 
+#>     mpg
+knitr::kable(head(rowname), col.names = 'Rowname', "pandoc")
+```
+
+| Rowname           |
+| :---------------- |
+| Mazda RX4         |
+| Mazda RX4 Wag     |
+| Datsun 710        |
+| Hornet 4 Drive    |
+| Hornet Sportabout |
+| Valiant           |
+
+so at this point I define the model, I am interested in the rowname
+variable and I want to dummify it into 15 different features. So what I
+am doing is to take a 32 lenght different *char* vector and converting
+it into a 15 dummy columns. Here we are One-Hot dumming (just to point
+out that the outcome of the algo will be something that is either 0 if
+it not present or 1, NOT mean econded alike)
+
+``` r
+model =  ~ rowname
+matrice = hashed.model.matrix(model, mtcars, 15)
+matrice
+#> 32 x 15 sparse Matrix of class "dgCMatrix"
+#>    [[ suppressing 15 column names '1', '2', '3' ... ]]
+#>                                    
+#>  [1,] 1 . . . 1 . . . . . . . . . .
+#>  [2,] 1 . . . . . . . . . . . . . 1
+#>  [3,] 1 . . . . . . . . . . . . 1 .
+#>  [4,] 1 . . . . . . . . . . . 1 . .
+#>  [5,] 1 . . . . . 1 . . . . . . . .
+#>  [6,] 1 . . . . . . . . . . . 1 . .
+#>  [7,] 1 . . . . . . . 1 . . . . . .
+#>  [8,] 1 . . . . . . . . 1 . . . . .
+#>  [9,] 1 . . . . 1 . . . . . . . . .
+#> [10,] 1 . . . . . . . . . . . . . 1
+#> [11,] 1 . . 1 . . . . . . . . . . .
+#> [12,] 1 . 1 . . . . . . . . . . . .
+#> [13,] 2 . . . . . . . . . . . . . .
+#> [14,] 1 . 1 . . . . . . . . . . . .
+#> [15,] 1 . . 1 . . . . . . . . . . .
+#> [16,] 1 . . 1 . . . . . . . . . . .
+#> [17,] 1 . . . 1 . . . . . . . . . .
+#> [18,] 1 . . . . . . 1 . . . . . . .
+#> [19,] 1 . . 1 . . . . . . . . . . .
+#> [20,] 1 . . . . . . . . . . . . . 1
+#> [21,] 2 . . . . . . . . . . . . . .
+#> [22,] 1 . 1 . . . . . . . . . . . .
+#> [23,] 1 . . . . . . . . . 1 . . . .
+#> [24,] 1 . . . . . . . . . 1 . . . .
+#> [25,] 1 . . . . . . . 1 . . . . . .
+#> [26,] 1 . . . . . . . . 1 . . . . .
+#> [27,] 2 . . . . . . . . . . . . . .
+#> [28,] 1 . . . . . . . . . . . . 1 .
+#> [29,] 1 . . . . . . . . . . . 1 . .
+#> [30,] 1 1 . . . . . . . . . . . . .
+#> [31,] 1 . . . . . . . . . . . . 1 .
+#> [32,] 1 . . . . . 1 . . . . . . . .
+```
+
+## More
+
+Some other interesting suggestions comes from the Kuhn 2019 (Kuhn and
+Johnson 2019). When rows are too many, this technique can be really
+confusing and lower the model predeictive performance hashing all the
+values. The best technique from a statistical perspective is to convert
+all the id-alike columns into hashed values and then asses perform some
+dimension reducion like PCA to lower dimensionality. When the id-alike
+column really can not display any sort of aggregative information
+feature it highly recommended to set a number of column based on some
+assumption, either graphical and xontexstual. Then group up all the rest
+in one additional column called ‘other’. To get the concept imagine to
+have some separate trash collection task and you have a unordered
+multimaterial trash can with inside different materials. Your job is to
+sort these materials and throw them in the right bin. When you get
+through some paper (the rowname) you throw it in the paper bin (the new
+hashed columns), same job with the plastic in the plastic bell and so on
+for the rest. Unfortunately some material have to be thrown away in the
+unsorted waste, (the column other). In this way the model takes all the
+information coming from all the predictors from all the predictors
+without being to much stressed on dimensionality. Next, notice that
+there were 2 hashes with no collisions (i.e., have a single 1 in their
+column). But several columns exhibit collisions. An example of a
+collision is hash at col number 3 which encodes for both row 12 row 14
+and row 22. In statistical terms, these two categories are said to be
+aliased or confounded, meaning that a parameter estimated from this hash
+cannot isolate the effect of either car’s name. to solve this issue you
+try to exploit *signed* hashing feature as collision resultion
+techinique.
+
+## Signed hash feature
+
+Some hash functions can also be signed, meaning that instead of
+producing a binary indicator 0 and 1, for the new feature, they can take
+possible values could be -1, 0, or +1. Symmetricity here can be a plus.
+For ordered cat variables there are other techinques to exploit but are
+not the focus here. So now each column in the *signed* approach is a cat
+variable and can assume different values according to which car it is.
+There are not contraints for each columns, one column can have 2
+collisions and can be resolved with a -1 0 +1 signing approach. The
+following can still be binary encoded. Anyway uniformity in hashing is a
+really good property, the more they are uniformed the more each column
+can really express its potential information. Below you see some reasosn
+why this could be ineffective:
+
+  - less aliasing can help isolate the information coming from the
+    categorical variable.
+  - categories involved in collisions are not related in any meaningful
+    way. For example, the cars in row 12 *Merc 450SE* and in row 14
+    *Merc 450SLC* are not sharing any tangible characteristics with the
+    row 22 *Dodge Challenger.* They are simply put together due to the
+    randomicity of hashing collisions.
+  - the more abundant value will have a much larger influence on the
+    effect of that hashing feature. It is conceivable that a category
+    that occurs with great frequency is aliased with one that is rare.
+    You should get the concept by seeing rowwise the element that appear
+    the most.
+
+We are not aware of any statistically conscious competitor to feature
+hashing.
+
+## References
 
 <div id="refs" class="references">
 
-<div id="ref-R-base">
+<div id="ref-kuhn2019feature">
 
-R Core Team. 2019. *R: A Language and Environment for Statistical
-Computing*. Vienna, Austria: R Foundation for Statistical Computing.
-<https://www.R-project.org>.
+Kuhn, M., and K. Johnson. 2019. *Feature Engineering and Selection: A
+Practical Approach for Predictive Models*. Chapman & Hall/Crc Data
+Science Series. CRC Press.
+<https://books.google.it/books?id=q5alDwAAQBAJ>.
 
 </div>
 
@@ -243,9 +397,16 @@ Wikipedia. 2020. “Real-time bidding — Wikipedia, the Free Encyclopedia.”
 
 <div id="ref-zhang2014realtime">
 
-Zhang, Weinan, Shuai Yuan, Jun Wang, and Xuehua Shen. 2014. “Real-Time
+Zhang, Weinan, Shuai Yuan, Jun Wang, and Xuehua Shen. 2014a. “Real-Time
 Bidding Benchmarking with iPinYou Dataset.”
 <http://arxiv.org/abs/1407.7073>.
+
+</div>
+
+<div id="ref-zhang2014real">
+
+———. 2014b. “Real-Time Bidding Benchmarking with iPinYou Dataset.”
+*arXiv Preprint arXiv:1407.7073*.
 
 </div>
 
