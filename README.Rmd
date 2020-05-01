@@ -13,15 +13,7 @@ knitr::opts_chunk$set(
   comment = "#>",
   fig.path = "img"
 )
-
-library(tidymodels)
-library(tidyverse)
-library(magrittr)
-library(FeatureHashing)
-library(glmnet)
-library(AUC)
-library(DT)
-
+source('libs.R')
 ```
 
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/FeatureHashing)](https://cran.r-project.org/package=FeatureHashing/)
@@ -68,11 +60,11 @@ If you are not totally sure about what is a hash function you can check out thes
 
 let's load our data, data here are form the ipinyou [@zhang2014realtime] dataset. this dataset has many _char_ variables that actually can't really be considered __a-priori__ informative. Those are the ones that in any regular classroom exercises are dropped.
 
-This is a very interesting dataset, it regards the  bidding advestisement market. In case you don't know large comporates as well as medium try to place their own advertisement on poluar platforms. Due to the increasing number of companies that want to exploit the benefits of online advertisement and also to the lack of widely extended and performing channel on the web, companies are *bidding* prices to grab their space. This market is really huge and capitalized. [@zhang2014real]
+This is a very interesting dataset, it regards the  bidding advestisement market **RTB** (Real Time Bidding). In case you don't know large comporates as well as medium try to place their own advertisement on poluar platforms. Due to the increasing number of companies that want to exploit the benefits of online advertisement and also to the lack of widely extended and performing channel on the web, companies are *bidding* prices to grab their space. This market is really huge and capitalized. [@zhang2014real]
 
 > Emerged in 2009 [?], Real-Time Bidding (RTB) has become an important new paradigm in display advertising. For example, eMarketer estimates a 73% spending growth on RTB in United States during 2013, which accounts for 19% of the total spending in display advertising. Different from the conventional negotiation or pre-setting a fixed bid for each campaign or keyword, RTB enables the advertisers to give a bid for every individual impression. 
 
-and more... (DSP are the platforms where the magic happens)
+and more... (**DSP** are the platforms where the magic happens)
 
 
 

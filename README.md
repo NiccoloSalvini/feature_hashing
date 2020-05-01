@@ -74,12 +74,13 @@ really be considered **a-priori** informative. Those are the ones that
 in any regular classroom exercises are dropped.
 
 This is a very interesting dataset, it regards the bidding advestisement
-market. In case you don’t know large comporates as well as medium try to
-place their own advertisement on poluar platforms. Due to the increasing
-number of companies that want to exploit the benefits of online
-advertisement and also to the lack of widely extended and performing
-channel on the web, companies are *bidding* prices to grab their space.
-This market is really huge and capitalized. (Zhang et al. 2014b)
+market **RTB** (Real Time Bidding). In case you don’t know large
+comporates as well as medium try to place their own advertisement on
+poluar platforms. Due to the increasing number of companies that want to
+exploit the benefits of online advertisement and also to the lack of
+widely extended and performing channel on the web, companies are
+*bidding* prices to grab their space. This market is really huge and
+capitalized. (Zhang et al. 2014b)
 
 > Emerged in 2009 \[?\], Real-Time Bidding (RTB) has become an important
 > new paradigm in display advertising. For example, eMarketer estimates
@@ -89,7 +90,7 @@ This market is really huge and capitalized. (Zhang et al. 2014b)
 > for each campaign or keyword, RTB enables the advertisers to give a
 > bid for every individual impression.
 
-and more… (DSP are the platforms where the magic happens)
+and more… (**DSP** are the platforms where the magic happens)
 
 > Algorithms employed by DSPs are expected to contribute a much higher
 > return-on-investment (ROI) comparing with the traditional channels. It
